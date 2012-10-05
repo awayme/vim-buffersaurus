@@ -1,5 +1,4 @@
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
 ""  Buffersaurus
 ""
 ""  Vim document buffer indexing and navigation utility
@@ -110,6 +109,7 @@ let s:buffersaurus_catalog_sort_regime_desc = {
             \ 'fl' : ["F(L#)", "by filepath, then by line number"],
             \ 'fa' : ["F(A-Z)", "by filepath, then by line text"],
             \ 'a'  : ["A-Z", "by line text"],
+            \ 'pl' : ["P(L#)", "by priority, then by line number"],
             \ }
 " 2}}}
 
@@ -835,6 +835,8 @@ function! s:NewCatalog(catalog_domain, catalog_desc, default_sort)
             call sort(self.matched_lines, "s:compare_matched_lines_fa")
         elseif self.sort_regime == 'a'
             call sort(self.matched_lines, "s:compare_matched_lines_a")
+        elseif self.sort_regime == 'pl'
+            call sort(self.matched_lines, "s:compare_matched_lines_pl")
         else
             throw s:_buffersaurus_messenger.format_exception("Unrecognized sort regime: '" . self.sort_regime . "'")
         endif
@@ -956,6 +958,25 @@ function! s:compare_matched_lines_fl(m1, m2)
 endfunction
 
 " comparison function used for sorting matched lines: sort first by
+" priority, then by line number
+function! s:compare_matched_lines_pl(m1, m2)
+    let l:pri = s:compare_matched_lines_p(a:m1, a:m2)
+    "echo l:pri
+    "
+    if l:pri != 0
+        return l:pri
+    else
+        if a:m1.lnum < a:m2.lnum
+            return -1
+        elseif a:m1.lnum > a:m2.lnum
+            return 1
+        else
+            return 0
+        endif
+    endif
+endfunction
+
+" comparison function used for sorting matched lines: sort first by
 " filepath, then by text
 function! s:compare_matched_lines_fa(m1, m2)
     if a:m1.filepath < a:m2.filepath
@@ -973,6 +994,33 @@ function! s:compare_matched_lines_a(m1, m2)
     if a:m1.sort_text < a:m2.sort_text
         return -1
     elseif a:m1.sort_text > a:m2.sort_text
+        return 1
+    else
+        return 0
+    endif
+endfunction
+
+" comparison function used for sorting matched lines: sort by
+" priority
+function! s:compare_matched_lines_p(m1, m2)
+    let l:p1 = str2nr(matchstr(a:m1.sort_text, '\(@priority(\)\@<=\d'))
+    let l:p2 = str2nr(matchstr(a:m2.sort_text, '\(@priority(\)\@<=\d'))
+
+    " echo a:m1.sort_text
+    " echo 'p1:' . l:p1
+    " echo a:m2.sort_text
+    " echo 'p2:' . l:p2
+    if l:p1 == 0 
+        let l:p1 = 10
+    endif
+
+    if l:p2 == 0 
+        let l:p2 = 10
+    endif
+
+    if l:p1 < l:p2
+        return -1
+    elseif p1 > p2
         return 1
     else
         return 0
@@ -2122,6 +2170,7 @@ endfunction
 command! -bang -nargs=*                                           Bsgrep          :call <SID>IndexPatterns(<q-args>, '<bang>', '')
 command! -bang -nargs=0                                           Bstoc           :call <SID>IndexTerms('<args>', '<bang>', 'fl')
 command! -bang -nargs=1 -complete=customlist,<SID>Complete_bsterm Bsterm          :call <SID>IndexTerms('<args>', '<bang>', 'fl')
+command! -bang -nargs=1 -complete=customlist,<SID>Complete_bsterm BstermPri       :call <SID>IndexTerms('<args>', '<bang>', 'pl')
 command! -nargs=0                                                 Bsopen          :call <SID>OpenLastActiveCatalog()
 command! -range -bang -nargs=0                                    Bsnext          :call <SID>GotoEntry("n")
 command! -range -bang -nargs=0                                    Bsprev          :call <SID>GotoEntry("p")
