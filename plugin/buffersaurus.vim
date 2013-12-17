@@ -1018,6 +1018,14 @@ function! s:compare_matched_lines_p(m1, m2)
         let l:p2 = 10
     endif
 
+    if a:m1.sort_text =~ '@\~'
+        let l:p1 = 0
+    endif
+
+    if a:m2.sort_text =~ '@\~'
+        let l:p2 = 0
+    endif
+
     if l:p1 < l:p2
         return -1
     elseif p1 > p2
@@ -1574,6 +1582,10 @@ function! s:NewCatalogViewer(catalog, desc, ...)
         let l:index_field = self.render_entry_index(a:index)
         let l:lnum_field = s:Format_AlignRight(a:entry.lnum, 14 - len(l:index_field), " ")
         let l:src_line = self.fetch_buf_line(a:entry.buf_num, a:entry.lnum)
+        "my patch
+        "for the mobile phone screen
+        let l:src_line = substitute(l:src_line, '^\s*', '', 'g')
+        "end patch
         if self.is_pass_filter(l:src_line)
             let l:rendered_line = "" . l:index_field . " ".l:lnum_field . ":   " . l:src_line
             call self.append_line(l:rendered_line, a:index, a:entry.buf_num, a:entry.lnum, a:entry.col, 1, 1)
